@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ApplicationPackage SchemaVersion="1.0" AutodeskProduct="AutoCAD" Name="ESIGeneralMenu" Description="ESI General Menu" AppVersion="1.0.0" ProductType="Application" Author="Jon Sommer" ProductCode="{00000000-0000-0000-0000-000000000000}" UpgradeCode="{00000000-0000-0000-0000-000000000000}">
+  <CompanyDetails Name="ESI INC of Tennessee" />
+  <Components>
+    <RuntimeRequirements OS="Win64|Win32" Platform="AutoCAD*" SeriesMin="R19.0" SeriesMax="R19.0" />
+    <ComponentEntry AppName="ESIGeneralMenu" ModuleName=".\Contents\AutoCAD ESI General Menu.dll">
+      <Commands GroupName="ADN_StartupCommandTest">
+        <Command Local="" Global="" StartupCommand="True" />
+      </Commands>
+    </ComponentEntry>
+    <ComponentEntry AppName="Layer Reporter" ModuleName=".\Contents\ADNPlugin-LayerReporter.dll">
+      <Commands GroupName="ADN_StartupCommandTest">
+        <Command Local="" Global="" StartupCommand="True" />
+      </Commands>
+    </ComponentEntry>
+  </Components>
+</ApplicationPackage>
