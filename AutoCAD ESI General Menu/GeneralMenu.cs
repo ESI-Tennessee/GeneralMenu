@@ -1,15 +1,11 @@
 ﻿using System;
 using System.IO;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using Autodesk.AutoCAD.Geometry;
 using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.ApplicationServices;
 using Autodesk.AutoCAD.EditorInput;
 using Autodesk.AutoCAD.PlottingServices;
 //using Acad = Autodesk.AutoCAD.ApplicationServices.Application;
-using Autodesk.AutoCAD.Runtime;
 using System.Drawing;
 //using Autodesk.AutoCAD.ApplicationServices.Core;
 using Acad = Autodesk.AutoCAD.ApplicationServices.Core.Application;
@@ -17,35 +13,35 @@ using Acad = Autodesk.AutoCAD.ApplicationServices.Core.Application;
 
 
 namespace AutoCAD_ESI_General_Menu
-{       
+{
     //a repository of sorts for common methods to be used throughout the project
     public class GeneralMenu
     {
 
-   
-        ///<summary>
+
+        /*<summary>
         ///Inserts a drawing as an external reference overlay
         ///</summary>
         ///<param name="DrawingPath">The path of the dwg file to be XReferenced</param>
-        ///<param name="blockname">The file name</param>
-        static public void AttachAsOverlay(Point3d refPoint, string DrawingPath)
+        <param name="blockname">The file name</param>*/
+        public static void AttachAsOverlay(Point3d refPoint, string drawingPath)
         {
-            string blockname = Path.GetFileName(DrawingPath);
-            
-            Database db = Application.DocumentManager.MdiActiveDocument.Database;
+            var blockname = Path.GetFileName(drawingPath);
+
+            var db = Acad.DocumentManager.MdiActiveDocument.Database;
 
             //start the transaction
-            using (Transaction tr = db.TransactionManager.StartTransaction())
+            using (var tr = db.TransactionManager.StartTransaction())
             {
-                BlockTable bt = (BlockTable)tr.GetObject(db.BlockTableId, OpenMode.ForRead);
+                var bt = (BlockTable)tr.GetObject(db.BlockTableId, OpenMode.ForRead);
                 //open the paper space for write
-                BlockTableRecord btr = (BlockTableRecord)tr.GetObject(bt[BlockTableRecord.PaperSpace], OpenMode.ForWrite);
+                var btr = (BlockTableRecord)tr.GetObject(bt[BlockTableRecord.PaperSpace], OpenMode.ForWrite);
 
                 try
                 {
-                    ObjectId xrefId = db.OverlayXref(DrawingPath, blockname);
+                    var xrefId = db.OverlayXref(drawingPath, blockname);
 
-                    BlockReference br = new BlockReference(refPoint, xrefId);
+                    var br = new BlockReference(refPoint, xrefId);
 
                     //add the reference to the paper space
                     btr.AppendEntity(br);
@@ -55,10 +51,10 @@ namespace AutoCAD_ESI_General_Menu
                     tr.Commit();
                 }
 
-                catch (System.Exception e)
+                catch (Exception e)
                 {
                     //something didn't go right, displays the error message
-                    Application.ShowAlertDialog(e.Message);
+                    Acad.ShowAlertDialog(e.Message);
                 }
                 //dispose of transaction when we are done
                 tr.Dispose();
@@ -68,30 +64,29 @@ namespace AutoCAD_ESI_General_Menu
 
         public static BlockTableRecord GetBlock(string strSourceBlockName, string strSourceBlockPath)
         {
-            ObjectId oid;
-            BlockTableRecord btr = null;
+            BlockTableRecord btr;
 
-            Document doc = Acad.DocumentManager.MdiActiveDocument;
-            Database db = doc.Database;
+            var doc = Acad.DocumentManager.MdiActiveDocument;
+            var db = doc.Database;
 
-            BlockTable bt = (BlockTable)db.BlockTableId.GetObject(OpenMode.ForRead);
+            var bt = (BlockTable)db.BlockTableId.GetObject(OpenMode.ForRead);
 
-            using (Transaction trans = db.TransactionManager.StartTransaction())
+            using (var trans = db.TransactionManager.StartTransaction())
             {
-                using (Database sourcedb = new Database(false, false))
+                using (var sourcedb = new Database(false, false))
                 {
                     try
                     {
                         sourcedb.ReadDwgFile(strSourceBlockPath, FileShare.Read, true, "");
-                        oid = db.Insert(strSourceBlockPath, sourcedb, true);
+                        var oid = db.Insert(strSourceBlockPath, sourcedb, true);
                         btr = (BlockTableRecord)trans.GetObject(oid, OpenMode.ForWrite, true, true);
                         btr.Name = strSourceBlockName;
                         trans.Commit();
                     }
-                    catch (System.Exception e)
+                    catch (Exception e)
                     {
                         //something didn't go right, displays the error message
-                        Application.ShowAlertDialog(e.Message);
+                        Acad.ShowAlertDialog(e.Message);
                         return null;
                     }
                 }
@@ -101,73 +96,6 @@ namespace AutoCAD_ESI_General_Menu
 
         //returns a blockreference 
         public static BlockReference InsertBlockRef(Point3d dblInsert, string strSourceBlockPath)
-        {
-            string strSourceBlockName = Path.GetFileName(strSourceBlockPath);
-            
-            BlockTable bt;
-            BlockTableRecord btr;
-            BlockReference br;
-            //ObjectId id;           
-
-            Document doc = Acad.DocumentManager.MdiActiveDocument;
-            Database db = doc.Database;
-
-            using (Transaction trans = db.TransactionManager.StartTransaction())
-            {
-                BlockTableRecord btrSpace;
-
-                //insert block
-                bt = (BlockTable)trans.GetObject(db.BlockTableId, OpenMode.ForWrite, true, true);
-                
-                //if block already exists in drawing retrieve it, if not create it from external drawing
-                if (bt.Has(strSourceBlockName))
-                {
-                    br = new BlockReference(dblInsert, bt[strSourceBlockName]);
-                    ObjectId id = bt[strSourceBlockName];
-                    btr = (BlockTableRecord)trans.GetObject(id, OpenMode.ForRead, true, true);
-                    
-                }
-                else
-                {
-                    BlockTableRecord btrSource = GetBlock(strSourceBlockName, strSourceBlockPath);
-                    btr = (BlockTableRecord)trans.GetObject(btrSource.ObjectId, OpenMode.ForRead, true, true);
-                    
-                }
-                //Get the current space
-                btrSpace = (BlockTableRecord)trans.GetObject(db.CurrentSpaceId,   OpenMode.ForWrite);
-
-                //Get the Attributes from the block source and add references to them in the blockref's attribute collection
-                AttributeCollection attColl;
-                Entity ent;
-                br = new BlockReference(dblInsert, btr.ObjectId);
-
-
-                btrSpace.AppendEntity(br);
-                trans.AddNewlyCreatedDBObject(br, true);
-                attColl = br.AttributeCollection;
-
-                foreach (ObjectId oid in btr)
-                {
-                    ent = (Entity)trans.GetObject(oid, OpenMode.ForRead, true, true);
-
-                    if (ent.GetType() == typeof(AttributeDefinition))
-                    {
-                        AttributeDefinition attdef = (AttributeDefinition)ent;
-                        AttributeReference attref = new AttributeReference();
-                        attref.SetAttributeFromBlock(attdef, br.BlockTransform);
-                        attref.TextString = attdef.TextString;
-                        attColl.AppendAttribute(attref);
-                        trans.AddNewlyCreatedDBObject(attref, true);
-                    }
-                }
-                trans.Commit();
-
-                return br;
-            }
-        }
-
-        //returns a blockreference 
-        public static BlockReference InsertBlockRef(Point3d dblInsert, string strSourceBlockPath, string LayerName, short colorindex, string LineType)
         {
             string strSourceBlockName = Path.GetFileName(strSourceBlockPath);
 
@@ -207,8 +135,7 @@ namespace AutoCAD_ESI_General_Menu
                 AttributeCollection attColl;
                 Entity ent;
                 br = new BlockReference(dblInsert, btr.ObjectId);
-                CreateLayer(LayerName, colorindex, LineType,false);
-                br.Layer = LayerName;
+
 
                 btrSpace.AppendEntity(br);
                 trans.AddNewlyCreatedDBObject(br, true);
@@ -232,11 +159,79 @@ namespace AutoCAD_ESI_General_Menu
 
                 return br;
             }
-        }    
+        }
 
-        static public void CreateViewport(Point3d CenterPoint, double Height, double Width)
+        //returns a blockreference 
+        public static BlockReference InsertBlockRef(Point3d dblInsert, string strSourceBlockPath, string layerName, short colorindex, string lineType)
         {
-            Database db = Application.DocumentManager.MdiActiveDocument.Database;
+            string strSourceBlockName = Path.GetFileName(strSourceBlockPath);
+
+            BlockTable bt;
+            BlockTableRecord btr;
+            BlockReference br;
+            //ObjectId id;           
+
+            Document doc = Acad.DocumentManager.MdiActiveDocument;
+            Database db = doc.Database;
+
+            using (Transaction trans = db.TransactionManager.StartTransaction())
+            {
+                BlockTableRecord btrSpace;
+
+                //insert block
+                bt = (BlockTable)trans.GetObject(db.BlockTableId, OpenMode.ForWrite, true, true);
+
+                //if block already exists in drawing retrieve it, if not create it from external drawing
+                if (bt.Has(strSourceBlockName))
+                {
+                    br = new BlockReference(dblInsert, bt[strSourceBlockName]);
+                    ObjectId id = bt[strSourceBlockName];
+                    btr = (BlockTableRecord)trans.GetObject(id, OpenMode.ForRead, true, true);
+
+                }
+                else
+                {
+                    BlockTableRecord btrSource = GetBlock(strSourceBlockName, strSourceBlockPath);
+                    btr = (BlockTableRecord)trans.GetObject(btrSource.ObjectId, OpenMode.ForRead, true, true);
+
+                }
+                //Get the current space
+                btrSpace = (BlockTableRecord)trans.GetObject(db.CurrentSpaceId, OpenMode.ForWrite);
+
+                //Get the Attributes from the block source and add references to them in the blockref's attribute collection
+                AttributeCollection attColl;
+                Entity ent;
+                br = new BlockReference(dblInsert, btr.ObjectId);
+                CreateLayer(layerName, colorindex, lineType, false);
+                br.Layer = layerName;
+
+                btrSpace.AppendEntity(br);
+                trans.AddNewlyCreatedDBObject(br, true);
+                attColl = br.AttributeCollection;
+
+                foreach (ObjectId oid in btr)
+                {
+                    ent = (Entity)trans.GetObject(oid, OpenMode.ForRead, true, true);
+
+                    if (ent.GetType() == typeof(AttributeDefinition))
+                    {
+                        AttributeDefinition attdef = (AttributeDefinition)ent;
+                        AttributeReference attref = new AttributeReference();
+                        attref.SetAttributeFromBlock(attdef, br.BlockTransform);
+                        attref.TextString = attdef.TextString;
+                        attColl.AppendAttribute(attref);
+                        trans.AddNewlyCreatedDBObject(attref, true);
+                    }
+                }
+                trans.Commit();
+
+                return br;
+            }
+        }
+
+        public static void CreateViewport(Point3d centerPoint, double height, double width)
+        {
+            Database db = Acad.DocumentManager.MdiActiveDocument.Database;
 
             //start the transaction
             using (Transaction tr = db.TransactionManager.StartTransaction())
@@ -248,17 +243,19 @@ namespace AutoCAD_ESI_General_Menu
                 try
                 {
                     CreateLayer("VPORT", 151, "Continuous", false);
-                    
-                    Viewport vp = new Viewport();                    
-                    vp.Layer = "VPORT";
-                    vp.CenterPoint = CenterPoint;
-                    vp.Height = Height;
-                    vp.Width = Width;
-                    
+
+                    Viewport vp = new Viewport
+                    {
+                        Layer = "VPORT",
+                        CenterPoint = centerPoint,
+                        Height = height,
+                        Width = width
+                    };
+
                     //add the reference to the paper space
                     btr.AppendEntity(vp);
 
-                    
+
                     //tell the transaction about the newly added block
                     tr.AddNewlyCreatedDBObject(vp, true);
                     vp.On = true;
@@ -267,31 +264,30 @@ namespace AutoCAD_ESI_General_Menu
                     tr.Commit();
                 }
 
-                catch (System.Exception e)
+                catch (Exception e)
                 {
                     //something didn't go right, displays the error message
-                    Application.ShowAlertDialog(e.Message);
+                    Acad.ShowAlertDialog(e.Message);
                 }
                 //dispose of transaction when we are done
                 tr.Dispose();
             }
         }
 
-        static public void SetAttribute(BlockReference bref, String Tag, String TextString)
+        public static void SetAttribute(BlockReference bref, String tag, String textString)
         {
-            Database db = Application.DocumentManager.MdiActiveDocument.Database;
+            Database db = Acad.DocumentManager.MdiActiveDocument.Database;
 
             using (Transaction tr = db.TransactionManager.StartTransaction())
             {
                 tr.GetObject(bref.ObjectId, OpenMode.ForWrite);
                 AttributeCollection attColl = bref.AttributeCollection;
-                AttributeReference att;
 
                 foreach (ObjectId attID in attColl)
                 {
-                    att = (AttributeReference)attID.GetObject(OpenMode.ForWrite, true, true);
-                    if (att.Tag == Tag)
-                        att.TextString = TextString;
+                    var att = (AttributeReference)attID.GetObject(OpenMode.ForWrite, true, true);
+                    if (att.Tag == tag)
+                        att.TextString = textString;
                 }
                 tr.Commit();
             }
@@ -302,30 +298,29 @@ namespace AutoCAD_ESI_General_Menu
         /// </summary>
         /// <param name="layName"></param>Sets the Name of the layer
         /// <param name="colorindex"></param>Sets the color index of the layer
-        /// <param name="LineType"></param>Sets the line type of the layer
-        /// <param name="MakeLayerCurrent"></param>Make the layer current or not
-        public static void CreateLayer(string layName, short colorindex, string LineType, bool MakeLayerCurrent)
+        /// <param name="lineType"></param>Sets the line type of the layer
+        /// <param name="makeLayerCurrent"></param>Make the layer current or not
+        public static void CreateLayer(string layName, short colorindex, string lineType, bool makeLayerCurrent)
         {
 
-            Document doc = Application.DocumentManager.MdiActiveDocument;
+            Document doc = Acad.DocumentManager.MdiActiveDocument;
             Database db = doc.Database;
-            Editor ed = doc.Editor;
             Transaction tr = db.TransactionManager.StartTransaction();
 
             using (tr)
-            {  
+            {
                 // Get the layer table from the drawing
                 LayerTable lt = (LayerTable)tr.GetObject(db.LayerTableId, OpenMode.ForRead);
-                
+
                 // Create our new layer table record...
                 LayerTableRecord ltr = new LayerTableRecord();
-                
+
                 //checks if layer name already exists
                 if (!(lt.Has(layName)))
                 {
                     // ... and set its properties
                     ltr.Name = layName;
-                    
+
                     //assign color value to layer
                     ltr.Color = Autodesk.AutoCAD.Colors.Color.FromColorIndex(Autodesk.AutoCAD.Colors.ColorMethod.ByAci, colorindex);
 
@@ -333,30 +328,34 @@ namespace AutoCAD_ESI_General_Menu
                     LinetypeTable acLinTbl;
                     acLinTbl = tr.GetObject(db.LinetypeTableId, OpenMode.ForRead) as LinetypeTable;
 
-                    if (acLinTbl.Has(LineType))
+                    if (acLinTbl != null && acLinTbl.Has(lineType))
                     {
                         // Upgrade the Layer Table Record for write
                         //ltr.UpgradeOpen();
                         // Set the linetype for the layer
-                        ltr.LinetypeObjectId = acLinTbl[LineType];
+                        ltr.LinetypeObjectId = acLinTbl[lineType];
+                    }
+                    else
+                    {
+                        //Do some exception handling IDK
                     }
 
                     // Add the new layer to the layer table
                     lt.UpgradeOpen();
-                    ObjectId ltId = lt.Add(ltr);
+                    lt.Add(ltr);
                     tr.AddNewlyCreatedDBObject(ltr, true);
 
                     // Commit the transaction
                     tr.Commit();
                 }
                 // Set the layer to be current for this drawing
-                if (MakeLayerCurrent == true)
+                if (makeLayerCurrent == true)
                 {
                     //lt.UpgradeOpen();
                     db.Clayer = lt[layName];
                 }
             }
-            
+
         }
 
         public static void CreateLayer(string layName, bool MakeLayerCurrent)
@@ -382,8 +381,7 @@ namespace AutoCAD_ESI_General_Menu
                     ltr.Name = layName;
 
                     // Open the Layer table for read
-                    LinetypeTable acLinTbl;
-                    acLinTbl = tr.GetObject(db.LinetypeTableId, OpenMode.ForRead) as LinetypeTable;
+                    LinetypeTable acLinTbl = tr.GetObject(db.LinetypeTableId, OpenMode.ForRead) as LinetypeTable;
 
                     // Add the new layer to the layer table
                     lt.UpgradeOpen();
@@ -409,7 +407,7 @@ namespace AutoCAD_ESI_General_Menu
         public static void LoadLinetype(string sLineTypName)
         {
             // Get the current document and database
-            Document acDoc = Application.DocumentManager.MdiActiveDocument;
+            Document acDoc = Acad.DocumentManager.MdiActiveDocument;
             Database acCurDb = acDoc.Database;
 
             // Start a transaction
@@ -441,7 +439,7 @@ namespace AutoCAD_ESI_General_Menu
             {
 
                 TextStyleTable tst = tr.GetObject(db.TextStyleTableId, OpenMode.ForRead) as TextStyleTable;
-                
+
                 if (tst.Has(name))
                 {
                     textstyleid = tst[name];
@@ -466,7 +464,7 @@ namespace AutoCAD_ESI_General_Menu
                     MediaName = "ANSI_expand_B_(11.00_x_17.00_Inches)";
                     CmScale = new CustomScale(1, 1.037);
                     break;
-                case "C":   
+                case "C":
                     MediaName = "ARCH_expand_C_(18.00_x_24.00_Inches)";
                     CmScale = new CustomScale(1, 1.037);
                     break;
@@ -486,8 +484,8 @@ namespace AutoCAD_ESI_General_Menu
                     MediaName = "ARCH_expand_D_(24.00_x_36.00_Inches)";
                     CmScale = new CustomScale(1, 1);
                     break;
-            }  
-            
+            }
+
             // Get the current document and database, and start a transaction
             Document acDoc = Application.DocumentManager.MdiActiveDocument;
             Database acCurDb = acDoc.Database;
@@ -502,7 +500,7 @@ namespace AutoCAD_ESI_General_Menu
                 Layout acLayout;
                 acLayout = acTrans.GetObject(acLayoutMgr.GetLayoutId(acLayoutMgr.CurrentLayout),
                 OpenMode.ForRead) as Layout;
-                
+
                 // Get the PlotInfo from the layout
                 PlotInfo acPlInfo = new PlotInfo();
                 acPlInfo.Layout = acLayout.ObjectId;
@@ -515,18 +513,18 @@ namespace AutoCAD_ESI_General_Menu
                 PlotSettingsValidator acPlSetVdr = PlotSettingsValidator.Current;
                 acPlSetVdr.SetPlotConfigurationName(acPlSet, "DWF6 ePlot.pc3", MediaName);
                 acPlSetVdr.SetPlotType(acPlSet, Autodesk.AutoCAD.DatabaseServices.PlotType.Extents);
-                
+
                 acPlSetVdr.SetPlotCentered(acPlSet, true);
-                acPlSetVdr.SetCustomPrintScale(acPlSet,CmScale);
-                
-                
+                acPlSetVdr.SetCustomPrintScale(acPlSet, CmScale);
+
+
                 // Update the layout
                 acLayout.UpgradeOpen();
                 acLayout.CopyFrom(acPlSet);
 
                 // Output the name of the new device assigned to the layout
                 acDoc.Editor.WriteMessage("\nNew device name: " + acLayout.PlotConfigurationName);
-                
+
                 //regen the current view
                 Application.DocumentManager.MdiActiveDocument.Editor.Regen();
 
@@ -560,8 +558,8 @@ namespace AutoCAD_ESI_General_Menu
             // Image sentinel to check if the image data
 
             // is not corrupted
-            byte[] imgBSentinel = { 0x1f, 0x25, 0x6d, 0x7, 0xd4, 0x36, 0x28, 0x28, 0x9d, 0x57, 
-        0xca, 0x3f, 0x9d, 0x44, 0x10, 0x2b };
+            byte[] imgBSentinel = { 0x1f, 0x25, 0x6d, 0x7, 0xd4, 0x36, 0x28, 0x28, 0x9d, 0x57,
+    0xca, 0x3f, 0x9d, 0x44, 0x10, 0x2b };
 
             // Read Image sentinel
             byte[] imgCSentinel = new byte[17];
@@ -658,8 +656,8 @@ namespace AutoCAD_ESI_General_Menu
                 // read imgWmfSize wmf data
 
 
-                byte[] imgESentinel = { 0xe0, 0xda, 0x92, 0xf8, 0x2b, 0xc9, 0xd7, 0xd7, 0x62, 0xa8, 
-            0x35, 0xc0, 0x62, 0xbb, 0xef, 0xd4 };
+                byte[] imgESentinel = { 0xe0, 0xda, 0x92, 0xf8, 0x2b, 0xc9, 0xd7, 0xd7, 0x62, 0xa8,
+      0x35, 0xc0, 0x62, 0xbb, 0xef, 0xd4 };
                 imgCSentinel = r.ReadBytes(16);
 
                 // if image sentinel is correct
@@ -672,6 +670,6 @@ namespace AutoCAD_ESI_General_Menu
 
             fs.Close();
         }
-   
+
     }
 }
