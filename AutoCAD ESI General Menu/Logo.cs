@@ -66,7 +66,7 @@ namespace AutoCAD_ESI_General_Menu
         private void LogoListBox_SelectedIndexChanged(object sender, EventArgs e)
         {
             string filepath = MyPlugin.GetRoot() + @"Blocks\Logos\" + SelectedBorderSize + @"\" + LogoListBox.SelectedItem;
-            GeneralMenu.ACADIconPreview(filepath, LogoPictureBox);
+            GeneralMenu.AcadIconPreview(filepath, LogoPictureBox);
            
         }
 

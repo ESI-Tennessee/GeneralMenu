@@ -358,10 +358,10 @@ namespace AutoCAD_ESI_General_Menu
 
         }
 
-        public static void CreateLayer(string layName, bool MakeLayerCurrent)
+        public static void CreateLayer(string layName, bool makeLayerCurrent)
         {
 
-            Document doc = Application.DocumentManager.MdiActiveDocument;
+            Document doc = Acad.DocumentManager.MdiActiveDocument;
             Database db = doc.Database;
             Editor ed = doc.Editor;
             Transaction tr = db.TransactionManager.StartTransaction();
@@ -392,7 +392,7 @@ namespace AutoCAD_ESI_General_Menu
                     tr.Commit();
                 }
                 // Set the layer to be current for this drawing
-                if (MakeLayerCurrent == true)
+                if (makeLayerCurrent == true)
                 {
                     //lt.UpgradeOpen();
                     db.Clayer = lt[layName];
@@ -418,10 +418,14 @@ namespace AutoCAD_ESI_General_Menu
                 acLineTypTbl = acTrans.GetObject(acCurDb.LinetypeTableId,
                                                  OpenMode.ForRead) as LinetypeTable;
 
-                if (acLineTypTbl.Has(sLineTypName) == false)
+                if (acLineTypTbl != null && acLineTypTbl.Has(sLineTypName) == false)
                 {
                     // Load the Center Linetype
                     acCurDb.LoadLineTypeFile(sLineTypName, "acad.lin");
+                }
+                else
+                {
+                    //Some exception handling
                 }
 
                 // Save the changes and dispose of the transaction
@@ -429,9 +433,9 @@ namespace AutoCAD_ESI_General_Menu
             }
         }
 
-        public static ObjectId GetTextstyleID(string name)
+        public static ObjectId GetTextstyleId(string name)
         {
-            Document doc = Application.DocumentManager.MdiActiveDocument;
+            Document doc = Acad.DocumentManager.MdiActiveDocument;
             Database db = doc.Database;
             ObjectId textstyleid = new ObjectId();
 
@@ -440,7 +444,7 @@ namespace AutoCAD_ESI_General_Menu
 
                 TextStyleTable tst = tr.GetObject(db.TextStyleTableId, OpenMode.ForRead) as TextStyleTable;
 
-                if (tst.Has(name))
+                if (tst != null && tst.Has(name))
                 {
                     textstyleid = tst[name];
                 }
@@ -449,45 +453,45 @@ namespace AutoCAD_ESI_General_Menu
             return textstyleid;
         }
 
-        public static void ChangePlotSetting(string BorderSize)
+        public static void ChangePlotSetting(string borderSize)
         {
-            string MediaName = "";
+            string mediaName = "";
             CustomScale CmScale = new CustomScale();
 
-            switch (BorderSize)
+            switch (borderSize)
             {
                 case "AE":
-                    MediaName = "ARCH_E1_(30.00_x_42.00_Inches)";
+                    mediaName = "ARCH_E1_(30.00_x_42.00_Inches)";
                     CmScale = new CustomScale(1, 1.037);
                     break;
                 case "B":
-                    MediaName = "ANSI_expand_B_(11.00_x_17.00_Inches)";
+                    mediaName = "ANSI_expand_B_(11.00_x_17.00_Inches)";
                     CmScale = new CustomScale(1, 1.037);
                     break;
                 case "C":
-                    MediaName = "ARCH_expand_C_(18.00_x_24.00_Inches)";
+                    mediaName = "ARCH_expand_C_(18.00_x_24.00_Inches)";
                     CmScale = new CustomScale(1, 1.037);
                     break;
                 case "D":
-                    MediaName = "ARCH_expand_D_(24.00_x_36.00_Inches)";
+                    mediaName = "ARCH_expand_D_(24.00_x_36.00_Inches)";
                     CmScale = new CustomScale(1, 1);
                     break;
                 case "E":
-                    MediaName = "ARCH_E_(36.00_x_48.00_Inches)";
+                    mediaName = "ARCH_E_(36.00_x_48.00_Inches)";
                     CmScale = new CustomScale(1, 1.032);
                     break;
                 case "F":
-                    MediaName = "ARCH_E1_(30.00_x_42.00_Inches)";
+                    mediaName = "ARCH_E1_(30.00_x_42.00_Inches)";
                     CmScale = new CustomScale(1, 1.037);
                     break;
                 default:
-                    MediaName = "ARCH_expand_D_(24.00_x_36.00_Inches)";
+                    mediaName = "ARCH_expand_D_(24.00_x_36.00_Inches)";
                     CmScale = new CustomScale(1, 1);
                     break;
             }
 
             // Get the current document and database, and start a transaction
-            Document acDoc = Application.DocumentManager.MdiActiveDocument;
+            Document acDoc = Acad.DocumentManager.MdiActiveDocument;
             Database acCurDb = acDoc.Database;
             using (Transaction acTrans = acCurDb.TransactionManager.StartTransaction())
             {
@@ -503,30 +507,33 @@ namespace AutoCAD_ESI_General_Menu
 
                 // Get the PlotInfo from the layout
                 PlotInfo acPlInfo = new PlotInfo();
-                acPlInfo.Layout = acLayout.ObjectId;
+                if (acLayout != null)
+                {
+                    acPlInfo.Layout = acLayout.ObjectId;
 
-                // Get a copy of the PlotSettings from the layout
-                PlotSettings acPlSet = new PlotSettings(acLayout.ModelType);
-                acPlSet.CopyFrom(acLayout);
+                    // Get a copy of the PlotSettings from the layout
+                    PlotSettings acPlSet = new PlotSettings(acLayout.ModelType);
+                    acPlSet.CopyFrom(acLayout);
 
-                // Update the PlotConfigurationName property of the PlotSettings object
-                PlotSettingsValidator acPlSetVdr = PlotSettingsValidator.Current;
-                acPlSetVdr.SetPlotConfigurationName(acPlSet, "DWF6 ePlot.pc3", MediaName);
-                acPlSetVdr.SetPlotType(acPlSet, Autodesk.AutoCAD.DatabaseServices.PlotType.Extents);
+                    // Update the PlotConfigurationName property of the PlotSettings object
+                    PlotSettingsValidator acPlSetVdr = PlotSettingsValidator.Current;
+                    acPlSetVdr.SetPlotConfigurationName(acPlSet, "DWF6 ePlot.pc3", mediaName);
+                    acPlSetVdr.SetPlotType(acPlSet, Autodesk.AutoCAD.DatabaseServices.PlotType.Extents);
 
-                acPlSetVdr.SetPlotCentered(acPlSet, true);
-                acPlSetVdr.SetCustomPrintScale(acPlSet, CmScale);
+                    acPlSetVdr.SetPlotCentered(acPlSet, true);
+                    acPlSetVdr.SetCustomPrintScale(acPlSet, CmScale);
 
 
-                // Update the layout
-                acLayout.UpgradeOpen();
-                acLayout.CopyFrom(acPlSet);
+                    // Update the layout
+                    acLayout.UpgradeOpen();
+                    acLayout.CopyFrom(acPlSet);
 
-                // Output the name of the new device assigned to the layout
-                acDoc.Editor.WriteMessage("\nNew device name: " + acLayout.PlotConfigurationName);
+                    // Output the name of the new device assigned to the layout
+                    acDoc.Editor.WriteMessage("\nNew device name: " + acLayout.PlotConfigurationName);
+                }
 
                 //regen the current view
-                Application.DocumentManager.MdiActiveDocument.Editor.Regen();
+                Acad.DocumentManager.MdiActiveDocument.Editor.Regen();
 
                 //zoom to the extents of the drawing
                 acDoc.SendStringToExecute("._zoom _all ", true, false, false);
@@ -541,7 +548,7 @@ namespace AutoCAD_ESI_General_Menu
         /// </summary>
         /// <param name="strFile">Path and filename of dwg</param>
         /// <param name="picBox">Picture Box to display the thumbnail</param>
-        public static void ACADIconPreview(string strFile, System.Windows.Forms.PictureBox picBox)
+        public static void AcadIconPreview(string strFile, System.Windows.Forms.PictureBox picBox)
         {
             //int Num1 = 1;
             //Image imgVal1 = null;

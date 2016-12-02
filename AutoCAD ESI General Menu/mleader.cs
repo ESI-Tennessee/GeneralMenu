@@ -44,7 +44,7 @@ namespace AutoCAD_ESI_General_Menu
                 mt.SetDatabaseDefaults();
                 mt.Contents = m_contents;
                 
-                mt.TextStyleId = GeneralMenu.GetTextstyleID("ESI-STD");
+                mt.TextStyleId = GeneralMenu.GetTextstyleId("ESI-STD");
 
                 ml.MText = mt;
                 ml.TextColor = Autodesk.AutoCAD.Colors.Color.FromColorIndex(Autodesk.AutoCAD.Colors.ColorMethod.ByAci, 32);

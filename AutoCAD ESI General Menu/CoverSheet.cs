@@ -75,7 +75,7 @@ namespace AutoCAD_ESI_General_Menu
             if (CoverSheetlistBox.SelectedIndex != -1)
             {
                 string filepath = MyPlugin.GetRoot() + @"Blocks\Cover Sheet Logos\" + SelectedBorderSize + @"\" + CoverSheetlistBox.SelectedItem;
-                GeneralMenu.ACADIconPreview(filepath, CoverSheetPictureBox);
+                GeneralMenu.AcadIconPreview(filepath, CoverSheetPictureBox);
             }
             else
             {
