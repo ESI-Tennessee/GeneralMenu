@@ -1,8 +1,11 @@
-﻿using Autodesk.AutoCAD.ApplicationServices;
-//using Autodesk.AutoCAD.ApplicationServices.Core;
+﻿using System;
+using System.Windows;
+using Autodesk.AutoCAD.ApplicationServices;
 using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.EditorInput;
 using Autodesk.AutoCAD.Runtime;
+using Application = Autodesk.AutoCAD.ApplicationServices.Core.Application;
+
 namespace AutoCAD_ESI_General_Menu
 {
 
@@ -15,37 +18,44 @@ namespace AutoCAD_ESI_General_Menu
             Document doc = Application.DocumentManager.MdiActiveDocument;
             Database db = doc.Database;
             Editor ed = doc.Editor;
-
+            
             Transaction tr = doc.TransactionManager.StartTransaction();
             using (tr)
             {
                 BlockTable bt = tr.GetObject(db.BlockTableId, OpenMode.ForRead) as BlockTable;
 
-                //check to see wich Title block is in the drawing
-                if (bt.Has("Title-AE.dwg"))
-                    blockName = "TITLE-AE.DWG";
-                if (bt.Has("Title-C.dwg"))
-                    blockName = "TITLE-C.DWG";
-                if (bt.Has("Title-D.dwg"))
-                    blockName = "TITLE-D.DWG";
-                if (bt.Has("Title-B.dwg"))
-                    blockName = "TITLE-B.DWG";
+                //check to see wich Title block is in the drawing if any
+                if (bt != null)
+                {
+                    if (bt.Has("Title-AE.dwg"))
+                        blockName = "TITLE-AE.DWG";
+                    if (bt.Has("Title-C.dwg"))
+                        blockName = "TITLE-C.DWG";
+                    if (bt.Has("Title-D.dwg"))
+                        blockName = "TITLE-D.DWG";
+                    if (bt.Has("Title-B.dwg"))
+                        blockName = "TITLE-B.DWG";
 
-                //the old 2008 lisp command put the title blocks without the .dwg at the end
-                //so basically I have half the drawings out there without it and this is the only easy fix I can think of
-                if (bt.Has("Title-AE"))
-                    blockName = "TITLE-AE";
-                if (bt.Has("Title-C"))
-                    blockName = "TITLE-C";
-                if (bt.Has("Title-D"))
-                    blockName = "TITLE-D";
-                if (bt.Has("Title-B"))
-                    blockName = "TITLE-B";
+                    //the old 2008 lisp command put the title blocks without the .dwg at the end
+                    //so basically I have half the drawings out there without it and this is the only easy fix I can think of
+                    if (bt.Has("Title-AE"))
+                        blockName = "TITLE-AE";
+                    if (bt.Has("Title-C"))
+                        blockName = "TITLE-C";
+                    if (bt.Has("Title-D"))
+                        blockName = "TITLE-D";
+                    if (bt.Has("Title-B"))
+                        blockName = "TITLE-B";
 
-                tr.Commit();
-
+                    tr.Commit();
+                }
+                else
+                {
+                    MessageBox.Show("Something has gone wrong. Block Table is null.");
+                }
             }
-                       
+
+
             PromptStringOptions pso = new PromptStringOptions("");            
             pso.AllowSpaces = true;
 
