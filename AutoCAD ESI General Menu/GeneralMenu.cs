@@ -3,7 +3,7 @@ using System.IO;
 using Autodesk.AutoCAD.Geometry;
 using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.ApplicationServices;
-using Autodesk.AutoCAD.EditorInput;
+//using Autodesk.AutoCAD.EditorInput;
 using Autodesk.AutoCAD.PlottingServices;
 //using Acad = Autodesk.AutoCAD.ApplicationServices.Application;
 using System.Drawing;
@@ -17,8 +17,6 @@ namespace AutoCAD_ESI_General_Menu
     //a repository of sorts for common methods to be used throughout the project
     public class GeneralMenu
     {
-
-
         /*<summary>
         ///Inserts a drawing as an external reference overlay
         ///</summary>
@@ -69,8 +67,6 @@ namespace AutoCAD_ESI_General_Menu
             var doc = Acad.DocumentManager.MdiActiveDocument;
             var db = doc.Database;
 
-            var bt = (BlockTable)db.BlockTableId.GetObject(OpenMode.ForRead);
-
             using (var trans = db.TransactionManager.StartTransaction())
             {
                 using (var sourcedb = new Database(false, false))
@@ -109,15 +105,12 @@ namespace AutoCAD_ESI_General_Menu
 
             using (Transaction trans = db.TransactionManager.StartTransaction())
             {
-                BlockTableRecord btrSpace;
-
                 //insert block
                 bt = (BlockTable)trans.GetObject(db.BlockTableId, OpenMode.ForWrite, true, true);
 
                 //if block already exists in drawing retrieve it, if not create it from external drawing
                 if (bt.Has(strSourceBlockName))
                 {
-                    br = new BlockReference(dblInsert, bt[strSourceBlockName]);
                     ObjectId id = bt[strSourceBlockName];
                     btr = (BlockTableRecord)trans.GetObject(id, OpenMode.ForRead, true, true);
 
@@ -129,17 +122,16 @@ namespace AutoCAD_ESI_General_Menu
 
                 }
                 //Get the current space
-                btrSpace = (BlockTableRecord)trans.GetObject(db.CurrentSpaceId, OpenMode.ForWrite);
+                var btrSpace = (BlockTableRecord)trans.GetObject(db.CurrentSpaceId, OpenMode.ForWrite);
 
                 //Get the Attributes from the block source and add references to them in the blockref's attribute collection
-                AttributeCollection attColl;
                 Entity ent;
-                br = new BlockReference(dblInsert, btr.ObjectId);
 
+                br = new BlockReference(dblInsert, btr.ObjectId);
 
                 btrSpace.AppendEntity(br);
                 trans.AddNewlyCreatedDBObject(br, true);
-                attColl = br.AttributeCollection;
+                var attColl = br.AttributeCollection;
 
                 foreach (ObjectId oid in btr)
                 {
@@ -176,15 +168,12 @@ namespace AutoCAD_ESI_General_Menu
 
             using (Transaction trans = db.TransactionManager.StartTransaction())
             {
-                BlockTableRecord btrSpace;
-
                 //insert block
                 bt = (BlockTable)trans.GetObject(db.BlockTableId, OpenMode.ForWrite, true, true);
 
                 //if block already exists in drawing retrieve it, if not create it from external drawing
                 if (bt.Has(strSourceBlockName))
                 {
-                    br = new BlockReference(dblInsert, bt[strSourceBlockName]);
                     ObjectId id = bt[strSourceBlockName];
                     btr = (BlockTableRecord)trans.GetObject(id, OpenMode.ForRead, true, true);
 
@@ -196,10 +185,9 @@ namespace AutoCAD_ESI_General_Menu
 
                 }
                 //Get the current space
-                btrSpace = (BlockTableRecord)trans.GetObject(db.CurrentSpaceId, OpenMode.ForWrite);
+                var btrSpace = (BlockTableRecord)trans.GetObject(db.CurrentSpaceId, OpenMode.ForWrite);
 
                 //Get the Attributes from the block source and add references to them in the blockref's attribute collection
-                AttributeCollection attColl;
                 Entity ent;
                 br = new BlockReference(dblInsert, btr.ObjectId);
                 CreateLayer(layerName, colorindex, lineType, false);
@@ -207,7 +195,7 @@ namespace AutoCAD_ESI_General_Menu
 
                 btrSpace.AppendEntity(br);
                 trans.AddNewlyCreatedDBObject(br, true);
-                attColl = br.AttributeCollection;
+                var attColl = br.AttributeCollection;
 
                 foreach (ObjectId oid in btr)
                 {
@@ -283,9 +271,9 @@ namespace AutoCAD_ESI_General_Menu
                 tr.GetObject(bref.ObjectId, OpenMode.ForWrite);
                 AttributeCollection attColl = bref.AttributeCollection;
 
-                foreach (ObjectId attID in attColl)
+                foreach (ObjectId attId in attColl)
                 {
-                    var att = (AttributeReference)attID.GetObject(OpenMode.ForWrite, true, true);
+                    var att = (AttributeReference)attId.GetObject(OpenMode.ForWrite, true, true);
                     if (att.Tag == tag)
                         att.TextString = textString;
                 }
@@ -325,8 +313,7 @@ namespace AutoCAD_ESI_General_Menu
                     ltr.Color = Autodesk.AutoCAD.Colors.Color.FromColorIndex(Autodesk.AutoCAD.Colors.ColorMethod.ByAci, colorindex);
 
                     // Open the Layer table for read
-                    LinetypeTable acLinTbl;
-                    acLinTbl = tr.GetObject(db.LinetypeTableId, OpenMode.ForRead) as LinetypeTable;
+                    var acLinTbl = tr.GetObject(db.LinetypeTableId, OpenMode.ForRead) as LinetypeTable;
 
                     if (acLinTbl != null && acLinTbl.Has(lineType))
                     {
@@ -349,7 +336,7 @@ namespace AutoCAD_ESI_General_Menu
                     tr.Commit();
                 }
                 // Set the layer to be current for this drawing
-                if (makeLayerCurrent == true)
+                if (makeLayerCurrent)
                 {
                     //lt.UpgradeOpen();
                     db.Clayer = lt[layName];
@@ -363,7 +350,6 @@ namespace AutoCAD_ESI_General_Menu
 
             Document doc = Acad.DocumentManager.MdiActiveDocument;
             Database db = doc.Database;
-            Editor ed = doc.Editor;
             Transaction tr = db.TransactionManager.StartTransaction();
 
             using (tr)
@@ -380,19 +366,15 @@ namespace AutoCAD_ESI_General_Menu
                     // ... and set its properties
                     ltr.Name = layName;
 
-                    // Open the Layer table for read
-                    LinetypeTable acLinTbl = tr.GetObject(db.LinetypeTableId, OpenMode.ForRead) as LinetypeTable;
-
                     // Add the new layer to the layer table
                     lt.UpgradeOpen();
-                    ObjectId ltId = lt.Add(ltr);
                     tr.AddNewlyCreatedDBObject(ltr, true);
 
                     // Commit the transaction
                     tr.Commit();
                 }
                 // Set the layer to be current for this drawing
-                if (makeLayerCurrent == true)
+                if (makeLayerCurrent)
                 {
                     //lt.UpgradeOpen();
                     db.Clayer = lt[layName];
@@ -414,9 +396,8 @@ namespace AutoCAD_ESI_General_Menu
             using (Transaction acTrans = acCurDb.TransactionManager.StartTransaction())
             {
                 // Open the Linetype table for read
-                LinetypeTable acLineTypTbl;
-                acLineTypTbl = acTrans.GetObject(acCurDb.LinetypeTableId,
-                                                 OpenMode.ForRead) as LinetypeTable;
+                var acLineTypTbl = acTrans.GetObject(acCurDb.LinetypeTableId,
+                    OpenMode.ForRead) as LinetypeTable;
 
                 if (acLineTypTbl != null && acLineTypTbl.Has(sLineTypName) == false)
                 {
@@ -455,38 +436,38 @@ namespace AutoCAD_ESI_General_Menu
 
         public static void ChangePlotSetting(string borderSize)
         {
-            string mediaName = "";
-            CustomScale CmScale = new CustomScale();
+            string mediaName;
+            CustomScale cmScale;
 
             switch (borderSize)
             {
                 case "AE":
                     mediaName = "ARCH_E1_(30.00_x_42.00_Inches)";
-                    CmScale = new CustomScale(1, 1.037);
+                    cmScale = new CustomScale(1, 1.037);
                     break;
                 case "B":
                     mediaName = "ANSI_expand_B_(11.00_x_17.00_Inches)";
-                    CmScale = new CustomScale(1, 1.037);
+                    cmScale = new CustomScale(1, 1.037);
                     break;
                 case "C":
                     mediaName = "ARCH_expand_C_(18.00_x_24.00_Inches)";
-                    CmScale = new CustomScale(1, 1.037);
+                    cmScale = new CustomScale(1, 1.037);
                     break;
                 case "D":
                     mediaName = "ARCH_expand_D_(24.00_x_36.00_Inches)";
-                    CmScale = new CustomScale(1, 1);
+                    cmScale = new CustomScale(1, 1);
                     break;
                 case "E":
                     mediaName = "ARCH_E_(36.00_x_48.00_Inches)";
-                    CmScale = new CustomScale(1, 1.032);
+                    cmScale = new CustomScale(1, 1.032);
                     break;
                 case "F":
                     mediaName = "ARCH_E1_(30.00_x_42.00_Inches)";
-                    CmScale = new CustomScale(1, 1.037);
+                    cmScale = new CustomScale(1, 1.037);
                     break;
                 default:
                     mediaName = "ARCH_expand_D_(24.00_x_36.00_Inches)";
-                    CmScale = new CustomScale(1, 1);
+                    cmScale = new CustomScale(1, 1);
                     break;
             }
 
@@ -497,13 +478,11 @@ namespace AutoCAD_ESI_General_Menu
             {
 
                 // Reference the Layout Manager
-                LayoutManager acLayoutMgr;
-                acLayoutMgr = LayoutManager.Current;
+                var acLayoutMgr = LayoutManager.Current;
 
                 // Get the current layout and output its name in the Command Line window
-                Layout acLayout;
-                acLayout = acTrans.GetObject(acLayoutMgr.GetLayoutId(acLayoutMgr.CurrentLayout),
-                OpenMode.ForRead) as Layout;
+                var acLayout = acTrans.GetObject(acLayoutMgr.GetLayoutId(acLayoutMgr.CurrentLayout),
+                    OpenMode.ForRead) as Layout;
 
                 // Get the PlotInfo from the layout
                 PlotInfo acPlInfo = new PlotInfo();
@@ -521,7 +500,7 @@ namespace AutoCAD_ESI_General_Menu
                     acPlSetVdr.SetPlotType(acPlSet, Autodesk.AutoCAD.DatabaseServices.PlotType.Extents);
 
                     acPlSetVdr.SetPlotCentered(acPlSet, true);
-                    acPlSetVdr.SetCustomPrintScale(acPlSet, CmScale);
+                    acPlSetVdr.SetCustomPrintScale(acPlSet, cmScale);
 
 
                     // Update the layout
@@ -569,15 +548,11 @@ namespace AutoCAD_ESI_General_Menu
     0xca, 0x3f, 0x9d, 0x44, 0x10, 0x2b };
 
             // Read Image sentinel
-            byte[] imgCSentinel = new byte[17];
-            imgCSentinel = r.ReadBytes(16);
+            var imgCSentinel = r.ReadBytes(16);
 
             // if image sentinel is correct
             if ((imgBSentinel.ToString() == imgCSentinel.ToString()))
             {
-                // Get image size
-                UInt32 imgSize = r.ReadUInt32();
-
                 // Get number of images present
                 byte imgPresent = r.ReadByte();
 
@@ -591,8 +566,8 @@ namespace AutoCAD_ESI_General_Menu
                 bool bmpDataPresent = false;
 
                 // wmf data
-                Int32 imgWmfStart = default(Int32);
-                Int32 imgWmfSize = default(Int32);
+                Int32 imgWmfStart;
+                Int32 imgWmfSize;
                 bool wmfDataPresent = false;
 
                 // get each image present
@@ -625,7 +600,7 @@ namespace AutoCAD_ESI_General_Menu
                     }
                 }
 
-                if ((bmpDataPresent))
+                if (bmpDataPresent)
                 {
 
                     r.BaseStream.Seek(imgBmpStart, SeekOrigin.Begin);
@@ -640,14 +615,12 @@ namespace AutoCAD_ESI_General_Menu
                     tempPixelData[10] = 0x36;
                     tempPixelData[11] = 0x4;
 
-                    byte[] tempBuffData = new byte[imgBmpSize + 1];
-
-                    tempBuffData = r.ReadBytes(imgBmpSize);
+                    var tempBuffData = r.ReadBytes(imgBmpSize);
                     tempBuffData.CopyTo(tempPixelData, 14);
 
                     MemoryStream memStream = new MemoryStream(tempPixelData);
                     Bitmap bmp = new Bitmap(memStream);
-                    System.Drawing.Size szBmp = default(System.Drawing.Size);
+                    Size szBmp = default(Size);
                     szBmp.Width = picBox.Width;
                     szBmp.Height = picBox.Height;
                     Bitmap bmpResize = new Bitmap(bmp, szBmp);
@@ -659,6 +632,7 @@ namespace AutoCAD_ESI_General_Menu
 
                 if ((wmfDataPresent))
                 {
+
                 }
                 // read imgWmfSize wmf data
 
@@ -668,7 +642,7 @@ namespace AutoCAD_ESI_General_Menu
                 imgCSentinel = r.ReadBytes(16);
 
                 // if image sentinel is correct
-                if ((imgESentinel.ToString() == imgCSentinel.ToString()))
+                if (imgESentinel.ToString() == imgCSentinel.ToString())
                 {
                 }
                 // Image data is not corrupted               
