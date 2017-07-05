@@ -12,24 +12,18 @@ namespace AutoCAD_ESI_General_Menu
 {
     class AttInfo
     {
-
-        private Point3d _pos;
         private Point3d _aln;
         private bool _aligned;
 
 
         public AttInfo(Point3d pos, Point3d aln, bool aligned)
         {
-            _pos = pos;
+            Position = pos;
             _aln = aln;
             _aligned = aligned;
         }
         
-        public Point3d Position
-        {
-            set { _pos = value; }
-            get { return _pos; }
-        }
+        public Point3d Position { set; get; }
 
         public Point3d Alignment
         {
