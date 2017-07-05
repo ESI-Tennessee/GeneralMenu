@@ -9,7 +9,7 @@ using Autodesk.AutoCAD.PlottingServices;
 using System.Drawing;
 //using Autodesk.AutoCAD.ApplicationServices.Core;
 using Acad = Autodesk.AutoCAD.ApplicationServices.Core.Application;
-
+using Image = System.Windows.Controls.Image;
 
 
 namespace AutoCAD_ESI_General_Menu
@@ -600,7 +600,7 @@ namespace AutoCAD_ESI_General_Menu
                     }
                 }
 
-                if (bmpDataPresent)
+                if (bmpDataPresent && imgBmpSize != 0)
                 {
 
                     r.BaseStream.Seek(imgBmpStart, SeekOrigin.Begin);
@@ -628,6 +628,11 @@ namespace AutoCAD_ESI_General_Menu
 
 
                     picBox.Image = bmpResize;
+                }
+                else
+                {
+                    //error message, logo cannot be displayed
+                    picBox.Image = picBox.ErrorImage;
                 }
 
                 if ((wmfDataPresent))
